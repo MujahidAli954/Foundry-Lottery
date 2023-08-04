@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
@@ -57,7 +57,7 @@ contract Lottery is VRFConsumerBaseV2 {
         s_lastTimeStamp = block.timestamp;
     }
 
-    function enterlottery() public payable{
+    function enterLottery() public payable{
         // require(msg.value >= i_entranceFee,"Entrance fee should be greater than zero");
         if(msg.value < i_entranceFee){
             revert Lottery__NotEnoughEthSent();
@@ -122,5 +122,11 @@ contract Lottery is VRFConsumerBaseV2 {
     /** Geters */
     function getEntranceFee() external view returns(uint256){
         return i_entranceFee;
+    }
+    function getLotteryState() external view returns(LotteryState){
+        return s_lotteryState;
+    }
+    function getPlayer(uint256 indexOfPlayer) external view returns(address){
+        return s_players[indexOfPlayer];
     }
 }
