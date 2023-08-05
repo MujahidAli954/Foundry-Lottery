@@ -18,6 +18,7 @@ contract LotteryTest is Test {
     bytes32 gasLane;
     uint64 subscriptionId;
     uint32 callbackGasLimit;
+    address link;
 
     address public PLAYER = makeAddr("player");
     uint256 public constant STARTING_USER_BALANCE = 10 ether;
@@ -30,7 +31,8 @@ contract LotteryTest is Test {
              vrfCoordinator,
              gasLane,
              subscriptionId,
-             callbackGasLimit
+             callbackGasLimit,
+             link
         ) = helperConfig.activeNetworkConfig();
         vm.deal(PLAYER,STARTING_USER_BALANCE);
     }
@@ -55,6 +57,17 @@ contract LotteryTest is Test {
         vm.expectEmit(true,false,false,false,address(lottery));
         emit EnteredLottery(PLAYER);
         lottery.enterLottery{value: entranceFee}();
+    }
+
+    function testCantEnterWhenLotteryIsCalculating() public {
+        vm.prank(PLAYER);
+        lottery.enterLottery{value:entranceFee}();
+        vm.warp(block.timestamp + interval +1);
+        vm.roll(block.number +1);
+        lottery.performUpkeep("");
+        vm.expectRevert(Lottery.Lottery__LotteryNotOpen.selector);
+        lottery.enterLottery{value:entranceFee}();
+
     }
 
 }
