@@ -38,6 +38,7 @@ contract Lottery is VRFConsumerBaseV2 {
     /** Events */
     event EnteredLottery(address indexed player);
     event pickedWinner(address indexed winner);
+    event RequestedLotteryWinner(uint256 indexed requestId);
 
     constructor(uint256 entranceFee,
     uint256 interval,
@@ -91,13 +92,14 @@ contract Lottery is VRFConsumerBaseV2 {
             revert Lottery__UpKeepNotNeeded(address(this).balance, s_players.length,uint256(s_lotteryState));
         }
         s_lotteryState = LotteryState.CALCULATING;
-        i_vrfCoordinator.requestRandomWords(
+       uint256 requestId =  i_vrfCoordinator.requestRandomWords(
             i_gasLane,
             i_subscriptionId,
             REQUEST_CONFIRMATIONS,
             i_callbackGasLimit,
             NUM_WORDS
         );
+        emit RequestedLotteryWinner(requestId);
     }
 
        function fulfillRandomWords(
@@ -123,10 +125,29 @@ contract Lottery is VRFConsumerBaseV2 {
     function getEntranceFee() external view returns(uint256){
         return i_entranceFee;
     }
+      function getRequestConfirmations() public pure returns (uint256) {
+        return REQUEST_CONFIRMATIONS;
+    }
     function getLotteryState() external view returns(LotteryState){
         return s_lotteryState;
     }
     function getPlayer(uint256 indexOfPlayer) external view returns(address){
         return s_players[indexOfPlayer];
+    }
+       function getRecentWinner() public view returns (address) {
+        return s_recentWinner;
+    }
+
+    function getLastTimeStamp() public view returns (uint256) {
+        return s_lastTimeStamp;
+    }
+
+    function getInterval() public view returns (uint256) {
+        return i_interval;
+    }
+
+
+    function getNumberOfPlayers() public view returns (uint256) {
+        return s_players.length;
     }
 }

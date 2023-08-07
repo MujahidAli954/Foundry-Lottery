@@ -16,9 +16,11 @@ struct NetworkConfig{
     uint64 subscriptionId;
     uint32 callbackGasLimit;
     address link;
+    uint256 deployerKey;
 }
 NetworkConfig public activeNetworkConfig;
-
+uint256 public DEFAULT_ANVIL_PRIVATE_KEY =
+        0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 constructor(){
     if(block.chainid == 11155111){
         activeNetworkConfig = getSepoliaEthConfig();
@@ -26,6 +28,23 @@ constructor(){
         activeNetworkConfig = getOrCreateAnvilEthConfig();
     }
 }
+
+ function getMainnetEthConfig()
+        public
+        view
+        returns (NetworkConfig memory mainnetNetworkConfig)
+    {
+        mainnetNetworkConfig = NetworkConfig({
+            subscriptionId: 0, // If left as 0, our scripts will create one!
+            gasLane: 0x9fe0eebf5e446e3c998ec9bb19951541aee00bb90ea201ae456421a2ded86805,
+            automationUpdateInterval: 30, // 30 seconds
+            raffleEntranceFee: 0.01 ether,
+            callbackGasLimit: 500000, // 500,000 gas
+            vrfCoordinatorV2: 0x271682DEB8C4E0901D1a1550aD2e64D568E69909,
+            link: 0x514910771AF9Ca656af840dff83E8264EcF986CA,
+            deployerKey: vm.envUint("PRIVATE_KEY")
+        });
+    }
 
 function getSepoliaEthConfig() public pure returns (NetworkConfig memory){
     return NetworkConfig({
@@ -35,7 +54,9 @@ function getSepoliaEthConfig() public pure returns (NetworkConfig memory){
         gasLane:0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
         subscriptionId:0,
         callbackGasLimit:500000,
-        link:0x779877A7B0D9E8603169DdbD7836e478b4624789
+        link:0x779877A7B0D9E8603169DdbD7836e478b4624789,
+        deployerKey: vm.envUint("PRIVATE_KEY")
+
     });
 }
 
@@ -57,7 +78,8 @@ function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory){
         gasLane:0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
         subscriptionId:0,
         callbackGasLimit: 500000,
-        link:address(link)
+        link:address(link),
+        deployerKey: DEFAULT_ANVIL_PRIVATE_KEY
     });
 }
 

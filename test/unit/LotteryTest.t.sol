@@ -5,6 +5,8 @@ import {DeployLottery} from "../../script/DeployLottery.s.sol";
 import {Lottery} from "../../src/Lottery.sol";
 import {Test ,console} from "forge-std/Test.sol";
 import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {VRFCoordinatorV2Mock} from "../mocks/VRFCoordinatorV2Mock.sol";
 
 contract LotteryTest is Test {
     /** Events */
@@ -70,4 +72,63 @@ contract LotteryTest is Test {
 
     }
 
-}
+    function testCheckUpkeepReturnsFalseIfIthasNoBalance() public {
+        vm.warp(block.timestamp + interval +1);
+        vm.roll(block.number + 1);
+        (bool upkeepNeeded, ) = lottery.checkUpkeep("");
+        assert(upkeepNeeded == false);
+    }
+    function testPerformUpkeepCanOnlyRunIfCheckUpkeepIsTrue() public {
+        vm.prank(PLAYER);
+        lottery.enterLottery{value:entranceFee}();
+        vm.warp(block.timestamp + interval +1);
+        vm.roll(block.number + 1);
+        lottery.performUpkeep("");
+    }  
+    function testPerformUpkeepCanOnlyRevertIfCheckUpkeepIsFalse()  public {
+        uint256  currentBalance = 0;
+        uint256 numPlayers = 0;
+        uint256 lotteryState = 0;
+        vm.expectRevert(abi.encodeWithSelector(Lottery.Lottery__UpKeepNotNeeded.selector,currentBalance,numPlayers,lotteryState));
+        lottery.performUpkeep("");
+    }
+     modifier lotteryEnterAndTimePassed(){
+        vm.prank(PLAYER);
+        lottery.enterLottery{value:entranceFee}();
+        vm.warp(block.timestamp + interval + 1);
+        vm.roll(block.number + 1);
+        _;
+     }
+     fucntion testPerformUpkeepUpdatesLotteryStateAndEmitsRequestId() public lotteryEnterAndTimePassed{
+        vm.recordLogs();
+        lottery.performUpkeep("");
+        vm.Log[] memory entries = vm.getRecordedLogs();
+        bytes32 reuestId = entries[1].topics[1];
+
+        Lottery.LotteryState rState = lottery.getLotteryState();
+        assert(uint256(requestId) > 0);
+        assert(uint256(rState) == 1);
+     }
+
+function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(uint256 randomRequestId)
+        public
+        lotteryEnteredAndTimePassed
+    {
+        // Arrange
+        // Act / Assert
+        vm.expectRevert("nonexistent request");
+        // vm.mockCall could be used here...
+        VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWords(
+            randomRequestId,
+            address(lottery)
+        );
+
+        // vm.expectRevert("nonexistent request");
+
+        // VRFCoordinatorV2Mock(vrfCoordinatorV2).fulfillRandomWords(
+        //     1,
+        //     address(lottery)
+        // );
+    }
+
+      }
